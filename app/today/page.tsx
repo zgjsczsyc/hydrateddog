@@ -1,0 +1,384 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Plus, Droplet, Scale, TrendingUp, Trash2 } from "lucide-react";
+import {
+  getTodayStats,
+  addWaterRecord,
+  addWeightRecord,
+  deleteWaterRecord,
+  deleteWeightRecord,
+} from "@/lib/storage";
+import { DailyStats } from "@/types";
+
+export default function TodayPage() {
+  const [stats, setStats] = useState<DailyStats | null>(null);
+  const [waterAmount, setWaterAmount] = useState("");
+  const [weightBefore, setWeightBefore] = useState("");
+  const [weightAfter, setWeightAfter] = useState("");
+  const [showWaterForm, setShowWaterForm] = useState(false);
+  const [showWeightForm, setShowWeightForm] = useState(false);
+
+  // 加载今日数据
+  const loadTodayStats = () => {
+    const todayStats = getTodayStats();
+    setStats(todayStats);
+  };
+
+  useEffect(() => {
+    loadTodayStats();
+  }, []);
+
+  // 提交饮水记录
+  const handleWaterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(waterAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("请输入有效的饮水量");
+      return;
+    }
+    addWaterRecord(amount);
+    setWaterAmount("");
+    setShowWaterForm(false);
+    loadTodayStats();
+  };
+
+  // 提交称重记录
+  const handleWeightSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const before = parseFloat(weightBefore);
+    const after = parseFloat(weightAfter);
+    if (isNaN(before) || isNaN(after) || before <= 0 || after <= 0) {
+      alert("请输入有效的体重值");
+      return;
+    }
+    if (before <= after) {
+      alert("出门前体重应大于回来后体重");
+      return;
+    }
+    addWeightRecord(before, after);
+    setWeightBefore("");
+    setWeightAfter("");
+    setShowWeightForm(false);
+    loadTodayStats();
+  };
+
+  // 删除饮水记录
+  const handleDeleteWater = (id: string) => {
+    if (confirm("确定要删除这条记录吗？")) {
+      deleteWaterRecord(id);
+      loadTodayStats();
+    }
+  };
+
+  // 删除称重记录
+  const handleDeleteWeight = (id: string) => {
+    if (confirm("确定要删除这条记录吗？")) {
+      deleteWeightRecord(id);
+      loadTodayStats();
+    }
+  };
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 顶部标题栏 */}
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">本日记录</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {new Date().toLocaleDateString("zh-CN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              weekday: "long",
+            })}
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-6">
+        {/* 今日指标看板 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* 总饮水量 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-primary-yellow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-gray-600">
+                <Droplet className="w-5 h-5" />
+                <span className="text-sm font-medium">总饮水量</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.totalWaterIntake.toFixed(0)}
+              <span className="text-lg text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+
+          {/* 总尿量 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-primary-blue">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-gray-600">
+                <Scale className="w-5 h-5" />
+                <span className="text-sm font-medium">总尿量</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.totalUrineOutput.toFixed(0)}
+              <span className="text-lg text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+
+          {/* 净摄入 */}
+          <div
+            className={`bg-white rounded-xl shadow-sm p-6 border-l-4 ${
+              stats.netIntake >= 0
+                ? "border-green-500"
+                : "border-red-500"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-gray-600">
+                <TrendingUp className="w-5 h-5" />
+                <span className="text-sm font-medium">净摄入</span>
+              </div>
+            </div>
+            <div
+              className={`text-3xl font-bold ${
+                stats.netIntake >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {stats.netIntake >= 0 ? "+" : ""}
+              {stats.netIntake.toFixed(0)}
+              <span className="text-lg text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 快速录入区域 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* 饮水记录表单 */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Droplet className="w-5 h-5 text-primary-yellow" />
+              记录饮水
+            </h2>
+            {!showWaterForm ? (
+              <button
+                onClick={() => setShowWaterForm(true)}
+                className="w-full py-4 bg-primary-yellow hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                添加饮水记录
+              </button>
+            ) : (
+              <form onSubmit={handleWaterSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    饮水量 (ml)
+                  </label>
+                  <input
+                    type="number"
+                    value={waterAmount}
+                    onChange={(e) => setWaterAmount(e.target.value)}
+                    placeholder="请输入饮水量"
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-yellow focus:border-transparent"
+                    autoFocus
+                    step="1"
+                    min="0"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-primary-yellow hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors"
+                  >
+                    确认
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWaterForm(false);
+                      setWaterAmount("");
+                    }}
+                    className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  >
+                    取消
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          {/* 称重记录表单 */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Scale className="w-5 h-5 text-primary-blue" />
+              记录称重
+            </h2>
+            {!showWeightForm ? (
+              <button
+                onClick={() => setShowWeightForm(true)}
+                className="w-full py-4 bg-primary-blue hover:bg-blue-500 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                添加称重记录
+              </button>
+            ) : (
+              <form onSubmit={handleWeightSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    出门前体重 (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={weightBefore}
+                    onChange={(e) => setWeightBefore(e.target.value)}
+                    placeholder="请输入出门前体重"
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                    autoFocus
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    回来后体重 (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={weightAfter}
+                    onChange={(e) => setWeightAfter(e.target.value)}
+                    placeholder="请输入回来后体重"
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-primary-blue hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+                  >
+                    确认
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWeightForm(false);
+                      setWeightBefore("");
+                      setWeightAfter("");
+                    }}
+                    className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  >
+                    取消
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+
+        {/* 今日记录列表 */}
+        {(stats.waterRecords.length > 0 || stats.weightRecords.length > 0) && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              今日记录
+            </h2>
+
+            {/* 饮水记录列表 */}
+            {stats.waterRecords.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-600 mb-3">
+                  饮水记录
+                </h3>
+                <div className="space-y-2">
+                  {stats.waterRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Droplet className="w-4 h-4 text-primary-yellow" />
+                        <span className="text-gray-900">
+                          {record.amount} ml
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {new Date(record.timestamp).toLocaleTimeString(
+                            "zh-CN",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteWater(record.id)}
+                        className="p-1 hover:bg-red-100 rounded transition-colors"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 称重记录列表 */}
+            {stats.weightRecords.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-600 mb-3">
+                  称重记录
+                </h3>
+                <div className="space-y-2">
+                  {stats.weightRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Scale className="w-4 h-4 text-primary-blue" />
+                        <div className="text-gray-900">
+                          <span>
+                            {record.weightBefore} kg → {record.weightAfter} kg
+                          </span>
+                          <span className="text-primary-blue ml-2">
+                            (尿量: {record.urineOutput.toFixed(0)} ml)
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(record.timestamp).toLocaleTimeString(
+                            "zh-CN",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteWeight(record.id)}
+                        className="p-1 hover:bg-red-100 rounded transition-colors"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
