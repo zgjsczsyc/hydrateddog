@@ -8,6 +8,7 @@ import {
   addWeightRecord,
   deleteWaterRecord,
   deleteWeightRecord,
+  setDailyNote,
 } from "@/lib/storage";
 import { DailyStats } from "@/types";
 
@@ -16,6 +17,8 @@ export default function TodayPage() {
   const [waterAmount, setWaterAmount] = useState("");
   const [weightBefore, setWeightBefore] = useState("");
   const [weightAfter, setWeightAfter] = useState("");
+  const [note, setNote] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [showWaterForm, setShowWaterForm] = useState(false);
   const [showWeightForm, setShowWeightForm] = useState(false);
 
@@ -23,6 +26,7 @@ export default function TodayPage() {
   const loadTodayStats = () => {
     const todayStats = getTodayStats();
     setStats(todayStats);
+    setNote(todayStats.note ?? "");
   };
 
   useEffect(() => {
@@ -46,8 +50,8 @@ export default function TodayPage() {
   // 提交称重记录
   const handleWeightSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const before = parseFloat(weightBefore);
-    const after = parseFloat(weightAfter);
+    const before = Math.round(parseFloat(weightBefore) * 1000) / 1000;
+    const after = Math.round(parseFloat(weightAfter) * 1000) / 1000;
     if (isNaN(before) || isNaN(after) || before <= 0 || after <= 0) {
       alert("请输入有效的体重值");
       return;
@@ -60,6 +64,15 @@ export default function TodayPage() {
     setWeightBefore("");
     setWeightAfter("");
     setShowWeightForm(false);
+    loadTodayStats();
+  };
+
+  // 保存今日备注
+  const handleSaveNote = () => {
+    if (!stats) return;
+    setIsSavingNote(true);
+    setDailyNote(stats.date, note.trim());
+    setIsSavingNote(false);
     loadTodayStats();
   };
 
@@ -161,6 +174,31 @@ export default function TodayPage() {
           </div>
         </div>
 
+        {/* 分时段饮水量 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">上午饮水量</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.morningWaterIntake.toFixed(0)}
+              <span className="text-sm text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">下午饮水量</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.afternoonWaterIntake.toFixed(0)}
+              <span className="text-sm text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">晚上饮水量</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.eveningWaterIntake.toFixed(0)}
+              <span className="text-sm text-gray-500 ml-1">ml</span>
+            </div>
+          </div>
+        </div>
+
         {/* 快速录入区域 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {/* 饮水记录表单 */}
@@ -243,7 +281,7 @@ export default function TodayPage() {
                     placeholder="请输入出门前体重"
                     className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                     autoFocus
-                    step="0.01"
+                  step="0.001"
                     min="0"
                   />
                 </div>
@@ -257,7 +295,7 @@ export default function TodayPage() {
                     onChange={(e) => setWeightAfter(e.target.value)}
                     placeholder="请输入回来后体重"
                     className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                    step="0.01"
+                  step="0.001"
                     min="0"
                   />
                 </div>
@@ -282,6 +320,32 @@ export default function TodayPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+
+        {/* 今日备注 */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">本日备注</h2>
+          <div className="space-y-3">
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="记录一下今天达达的情况，如精神状态、排便情况等"
+              className="w-full min-h-[120px] px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-yellow focus:border-transparent"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={handleSaveNote}
+                disabled={isSavingNote}
+                className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
+                  isSavingNote
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-primary-yellow hover:bg-yellow-500"
+                }`}
+              >
+                {isSavingNote ? "保存中..." : "保存备注"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -348,7 +412,8 @@ export default function TodayPage() {
                         <Scale className="w-4 h-4 text-primary-blue" />
                         <div className="text-gray-900">
                           <span>
-                            {record.weightBefore} kg → {record.weightAfter} kg
+                            {record.weightBefore.toFixed(3)} kg →{" "}
+                            {record.weightAfter.toFixed(3)} kg
                           </span>
                           <span className="text-primary-blue ml-2">
                             (尿量: {record.urineOutput.toFixed(0)} ml)

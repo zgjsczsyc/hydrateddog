@@ -9,18 +9,23 @@ const STORAGE_KEY = "dada-water-tracker-data";
 // 获取所有数据
 export function getAllData(): AppData {
   if (typeof window === "undefined") {
-    return { waterRecords: [], weightRecords: [] };
+    return { waterRecords: [], weightRecords: [], notes: {} };
   }
 
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) {
-    return { waterRecords: [], weightRecords: [] };
+    return { waterRecords: [], weightRecords: [], notes: {} };
   }
 
   try {
-    return JSON.parse(stored) as AppData;
+    const parsed = JSON.parse(stored) as Partial<AppData>;
+    return {
+      waterRecords: parsed.waterRecords ?? [],
+      weightRecords: parsed.weightRecords ?? [],
+      notes: parsed.notes ?? {},
+    };
   } catch {
-    return { waterRecords: [], weightRecords: [] };
+    return { waterRecords: [], weightRecords: [], notes: {} };
   }
 }
 
@@ -57,12 +62,16 @@ export function addWeightRecord(
   const now = Date.now();
   const date = new Date(now).toISOString().split("T")[0];
 
-  const urineOutput = (weightBefore - weightAfter) * 1000; // kg 转 ml (1g = 1ml)
+  const roundTo3 = (value: number) => Math.round(value * 1000) / 1000;
+  const beforeRounded = roundTo3(weightBefore);
+  const afterRounded = roundTo3(weightAfter);
+
+  const urineOutput = (beforeRounded - afterRounded) * 1000; // kg 转 ml (1g = 1ml)
 
   const record: WeightRecord = {
     id: `weight-${now}-${Math.random().toString(36).substring(2, 11)}`,
-    weightBefore,
-    weightAfter,
+    weightBefore: beforeRounded,
+    weightAfter: afterRounded,
     urineOutput,
     timestamp: now,
     date,
@@ -104,11 +113,30 @@ export function getDailyStats(date: string): DailyStats {
   );
   const netIntake = totalWaterIntake - totalUrineOutput;
 
+  let morningWaterIntake = 0;
+  let afternoonWaterIntake = 0;
+  let eveningWaterIntake = 0;
+
+  waterRecords.forEach((r) => {
+    const hour = new Date(r.timestamp).getHours();
+    if (hour < 12) {
+      morningWaterIntake += r.amount;
+    } else if (hour < 18) {
+      afternoonWaterIntake += r.amount;
+    } else {
+      eveningWaterIntake += r.amount;
+    }
+  });
+
   return {
     date,
     totalWaterIntake,
     totalUrineOutput,
     netIntake,
+    morningWaterIntake,
+    afternoonWaterIntake,
+    eveningWaterIntake,
+    note: data.notes?.[date] ?? "",
     waterRecords,
     weightRecords,
   };
@@ -127,8 +155,17 @@ export function getAllDailyStats(): DailyStats[] {
 
   data.waterRecords.forEach((r) => dateSet.add(r.date));
   data.weightRecords.forEach((r) => dateSet.add(r.date));
+  Object.keys(data.notes ?? {}).forEach((d) => dateSet.add(d));
 
   const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a)); // 倒序排列
 
   return dates.map((date) => getDailyStats(date));
+}
+
+// 设置某日备注
+export function setDailyNote(date: string, note: string): void {
+  const data = getAllData();
+  data.notes = data.notes ?? {};
+  data.notes[date] = note;
+  saveAllData(data);
 }

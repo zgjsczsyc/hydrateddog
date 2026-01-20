@@ -319,6 +319,14 @@ export default function HistoryPage() {
                     {/* 展开的详细内容 */}
                     {isExpanded && (
                       <div className="px-4 py-4 bg-white border-t border-gray-200">
+                        {/* 备注 */}
+                        <div className="mb-4">
+                          <div className="text-sm text-gray-600 mb-1">本日备注</div>
+                          <div className="px-3 py-2 bg-gray-50 rounded text-gray-800 whitespace-pre-wrap">
+                            {stat.note ? stat.note : "暂无备注"}
+                          </div>
+                        </div>
+
                         {/* 指标卡片 */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <div className="bg-yellow-50 rounded-lg p-3 border-l-4 border-primary-yellow">
@@ -356,6 +364,34 @@ export default function HistoryPage() {
                             >
                               {stat.netIntake >= 0 ? "+" : ""}
                               {stat.netIntake.toFixed(0)} ml
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 分时段饮水量 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-sm text-gray-600 mb-1">
+                              上午饮水量
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {stat.morningWaterIntake.toFixed(0)} ml
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-sm text-gray-600 mb-1">
+                              下午饮水量
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {stat.afternoonWaterIntake.toFixed(0)} ml
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-sm text-gray-600 mb-1">
+                              晚上饮水量
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {stat.eveningWaterIntake.toFixed(0)} ml
                             </div>
                           </div>
                         </div>
@@ -404,8 +440,8 @@ export default function HistoryPage() {
                                 >
                                   <Scale className="w-4 h-4 text-primary-blue" />
                                   <span className="text-gray-900">
-                                    {record.weightBefore} kg →{" "}
-                                    {record.weightAfter} kg
+                                    {record.weightBefore.toFixed(3)} kg →{" "}
+                                    {record.weightAfter.toFixed(3)} kg
                                   </span>
                                   <span className="text-primary-blue ml-auto">
                                     (尿量: {record.urineOutput.toFixed(0)} ml)

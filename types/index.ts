@@ -26,6 +26,10 @@ export interface DailyStats {
   totalWaterIntake: number; // 总饮水量 (ml)
   totalUrineOutput: number; // 总尿量 (ml)
   netIntake: number; // 净摄入量 (ml) = totalWaterIntake - totalUrineOutput
+  morningWaterIntake: number; // 上午饮水量 (0-12)
+  afternoonWaterIntake: number; // 下午饮水量 (12-18)
+  eveningWaterIntake: number; // 晚上饮水量 (18-24)
+  note: string; // 当日备注
   waterRecords: WaterIntakeRecord[]; // 当天的所有饮水记录
   weightRecords: WeightRecord[]; // 当天的所有称重记录
 }
@@ -34,4 +38,5 @@ export interface DailyStats {
 export interface AppData {
   waterRecords: WaterIntakeRecord[];
   weightRecords: WeightRecord[];
+  notes: Record<string, string>;
 }
