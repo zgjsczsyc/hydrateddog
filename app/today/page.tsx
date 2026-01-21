@@ -15,6 +15,7 @@ import { DailyStats } from "@/types";
 export default function TodayPage() {
   const [stats, setStats] = useState<DailyStats | null>(null);
   const [waterAmount, setWaterAmount] = useState("");
+  const [waterTag, setWaterTag] = useState<"主动喝水" | "骗水" | "补液" | "罐头">("主动喝水");
   const [weightBefore, setWeightBefore] = useState("");
   const [weightAfter, setWeightAfter] = useState("");
   const [note, setNote] = useState("");
@@ -41,8 +42,9 @@ export default function TodayPage() {
       alert("请输入有效的饮水量");
       return;
     }
-    addWaterRecord(amount);
+    addWaterRecord(amount, waterTag);
     setWaterAmount("");
+    setWaterTag("主动喝水");
     setShowWaterForm(false);
     loadTodayStats();
   };
@@ -232,6 +234,23 @@ export default function TodayPage() {
                     min="0"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    饮水方式
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[ "主动喝水", "骗水", "补液", "罐头" ].map((tagOption) => (
+                      <button
+                        key={tagOption}
+                        type="button"
+                        onClick={() => setWaterTag(tagOption as any)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${waterTag === tagOption ? "bg-primary-yellow text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                      >
+                        {tagOption}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -372,6 +391,11 @@ export default function TodayPage() {
                         <Droplet className="w-4 h-4 text-primary-yellow" />
                         <span className="text-gray-900">
                           {record.amount} ml
+                          {record.tag && (
+                            <span className="ml-2 px-2 py-1 bg-primary-yellow/20 text-primary-yellow text-xs rounded-full">
+                              {record.tag}
+                            </span>
+                          )}
                         </span>
                         <span className="text-sm text-gray-500">
                           {new Date(record.timestamp).toLocaleTimeString(

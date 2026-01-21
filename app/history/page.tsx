@@ -12,10 +12,15 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { getAllDailyStats, getDailyStats } from "@/lib/storage";
 import { DailyStats } from "@/types";
 import { Droplet, Scale, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
+
+const COLORS = ["#FBBF24", "#60A5FA", "#10B981", "#EF4444", "#A855F7", "#EC4899"];
 
 export default function HistoryPage() {
   const [allStats, setAllStats] = useState<DailyStats[]>([]);
@@ -73,6 +78,18 @@ export default function HistoryPage() {
     });
   };
 
+  // 计算饮水标签统计数据
+  const getWaterTagStats = () => {
+    const tagCounts: { [key: string]: number } = {};
+    allStats.forEach((dailyStat) => {
+      dailyStat.waterRecords.forEach((record) => {
+        const tag = record.tag || "未知"; // 默认值
+        tagCounts[tag] = (tagCounts[tag] || 0) + record.amount;
+      });
+    });
+    return Object.entries(tagCounts).map(([tag, amount]) => ({ name: tag, value: amount }));
+  };
+
   // 计算统计数据
   const calculateStats = (data: DailyStats[]) => {
     if (data.length === 0) return null;
@@ -104,6 +121,8 @@ export default function HistoryPage() {
     尿量: stat.totalUrineOutput,
     净摄入: stat.netIntake,
   }));
+
+  const waterTagData = getWaterTagStats();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -232,6 +251,42 @@ export default function HistoryPage() {
                   <Bar dataKey="饮水量" fill="#FBBF24" />
                   <Bar dataKey="尿量" fill="#60A5FA" />
                 </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* 饮水类型分析图表 */}
+        {waterTagData.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              饮水类型分析
+            </h2>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={waterTagData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) =>
+                      `${name} (${(percent * 100).toFixed(0)}%)`
+                    }
+                  >
+                    {waterTagData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${value} ml`} />
+                  <Legend />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </div>

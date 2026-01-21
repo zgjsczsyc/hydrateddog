@@ -8,6 +8,7 @@ export interface WaterIntakeRecord {
   amount: number; // 饮水量 (ml)
   timestamp: number; // 时间戳
   date: string; // 日期字符串 YYYY-MM-DD
+  tag?: "主动喝水" | "骗水" | "补液" | "罐头"; // 饮水类型标签
 }
 
 // 单次称重记录（用于计算尿量）

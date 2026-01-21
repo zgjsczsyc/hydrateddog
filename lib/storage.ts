@@ -36,7 +36,7 @@ export function saveAllData(data: AppData): void {
 }
 
 // 添加饮水记录
-export function addWaterRecord(amount: number): WaterIntakeRecord {
+export function addWaterRecord(amount: number, tag?: "主动喝水" | "骗水" | "补液" | "罐头"): WaterIntakeRecord {
   const data = getAllData();
   const now = Date.now();
   const date = new Date(now).toISOString().split("T")[0];
@@ -46,6 +46,7 @@ export function addWaterRecord(amount: number): WaterIntakeRecord {
     amount,
     timestamp: now,
     date,
+    tag,
   };
 
   data.waterRecords.push(record);
